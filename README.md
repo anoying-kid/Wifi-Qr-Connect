@@ -1,6 +1,6 @@
 # Wifi Qr connect (Mac OS)
 
-    Since every device has this option I was annoyed why my Mac doesn't have this feature, sometime its really hard to find the right wifi in heavy zone like Universities.
+Since every device has this option I was annoyed why my Mac doesn't have this feature, sometime its really hard to find the right wifi in heavy zone like Universities.
 
 ## Installation
 
