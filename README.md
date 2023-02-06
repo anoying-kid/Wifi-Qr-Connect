@@ -16,6 +16,19 @@ git clone https://github.com/anoying-kid/Wifi-Qr-Connect.git
 pip install -r requirements.txt
 ```
 
+## Usuage
+
+* Run the file connect_to_wifi.py using 
+```
+python3 connect_to_wifi.py
+``` 
+
+* New pop screen will come of your webcam, show the qr code into webcam.
+
+* If the screen stops that means the code is working and wait for 5-10 seconds.
+
+> **Note:** Running this for the time may ask you for the camera permission after that rerun the program.
+
 ## Only for MacOS
 
 You can furthur make a shortcut for that
