@@ -37,4 +37,4 @@ You can furthur make a shortcut for that
 
 > **Open Shortcut App \> New Shortcut \> Scripting \> Run Shell Script \> python3 connect_to_wifi.py \> First run for giving required permission then save.**
 
-Note: Furthur update will be coming soon.
+[LICENSE](./LICENSE)
