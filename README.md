@@ -15,9 +15,11 @@ Since every device has this option I was annoyed why my Mac doesn't have this fe
 git clone https://github.com/anoying-kid/Wifi-Qr-Connect.git
 ```
 
+## Images
 
-## Usage
-
-
+<p>
+    <img src="screenshots/start.png" width="40%"/>
+    <img src="screenshots/scanner.png" width="40%"/>
+</p>
 
 [LICENSE](./LICENSE)
