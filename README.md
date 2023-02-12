@@ -2,6 +2,8 @@
 
 Since every device has this option I was annoyed why my Mac doesn't have this feature, sometime its really hard to find the right wifi in heavy zone like Universities.
 
+This App will help you to connect to wifi using "Share Wifi using QR code", most android device has this feature to share the Wifi network using QR code.
+
 ## Installation
 
 ### MacOS
