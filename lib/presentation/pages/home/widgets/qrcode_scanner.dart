@@ -7,7 +7,6 @@ import 'package:flutter_platform_alert/flutter_platform_alert.dart';
 enum QrDetail { wifi, link, text }
 
 class BarcodeScanner extends StatefulWidget {
-  static const routeName = '/scanner';
   const BarcodeScanner({super.key});
 
   @override
