@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:macos_ui/macos_ui.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:flutter_platform_alert/flutter_platform_alert.dart';
 
@@ -99,25 +100,27 @@ class _BarcodeScannerState extends State<BarcodeScanner> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        iconTheme: const IconThemeData(color: Colors.black),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: MobileScanner(
-        controller: cameraController,
-        onDetect: (capture) {
-          final List<Barcode> barcodes = capture.barcodes;
-          for (final barcode in barcodes) {
-            if (barcode.rawValue != null) {
-              qrChecker(barcode.rawValue!, context);
-              cameraController.stop();
-            }
-          }
-        },
-      ),
-    );
+    return MacosScaffold(
+        // extendBodyBehindAppBar: true,
+        toolBar: ToolBar(
+          title: const Text('Indicators'),
+          titleWidth: 150.0,
+        ),
+        children: [
+          ContentArea(builder: (context, scrollController) {
+            return MobileScanner(
+              controller: cameraController,
+              onDetect: (capture) {
+                final List<Barcode> barcodes = capture.barcodes;
+                for (final barcode in barcodes) {
+                  if (barcode.rawValue != null) {
+                    qrChecker(barcode.rawValue!, context);
+                    cameraController.stop();
+                  }
+                }
+              },
+            );
+          }),
+        ]);
   }
 }

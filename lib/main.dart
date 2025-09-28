@@ -1,7 +1,6 @@
 // lib/main.dart
 import 'package:flutter/cupertino.dart';
-import 'package:macos_window_utils/widgets/titlebar_safe_area.dart';
-import 'package:macos_window_utils/window_manipulator.dart';
+import 'package:macos_ui/macos_ui.dart';
 import 'package:qr/core/constants/route_constants.dart';
 import 'package:qr/presentation/router/route_generator.dart';
 
@@ -19,12 +18,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoApp(
-      // title: 'QR App',
-      theme: const CupertinoThemeData(
-        brightness: Brightness.light,
-        // Theme customization here
-      ),
+    // final appTheme = context.watch<AppTheme>();
+    return MacosApp(
+      title: 'QR App',
       initialRoute: RouteConstants.home,
       onGenerateRoute: RouteGenerator.generateRoute,
       // Optional: Handle unknown routes

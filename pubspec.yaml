@@ -38,6 +38,7 @@ dependencies:
   mobile_scanner: ^7.0.1
   flutter_platform_alert: ^0.8.0
   macos_window_utils: ^1.9.0
+  macos_ui: ^2.2.0
 
 dev_dependencies:
   flutter_test:

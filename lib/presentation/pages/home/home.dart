@@ -1,35 +1,56 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'widgets/qrcode_scanner.dart';
+import 'package:macos_ui/macos_ui.dart';
+import 'package:qr/presentation/pages/home/widgets/qrcode_scanner.dart'; // Import the package
 
-class Home extends StatelessWidget {
+class Home extends StatefulWidget {
   const Home({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        backgroundColor: Colors.white,
-        body: Row(
-          children: [
-            Expanded(
-                flex: 1,
-                child: Container(height: double.infinity, child: SideBar())),
-            Expanded(
-                flex: 2,
-                child: Container(height: double.infinity, child: SideBar())),
-          ],
-        ));
-  }
+  State<Home> createState() => _HomeState();
 }
 
-class SideBar extends StatelessWidget {
-  const SideBar({super.key});
+class _HomeState extends State<Home> {
+  int pageIndex = 0;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Colors.white,
-      child: Text("QR Scanner"),
+    // Use MacosWindow and MacosScaffold for a native macOS structure
+    return MacosWindow(
+      sidebar: Sidebar(
+        dragClosed: false,
+        builder: (context, scrollController) {
+          // Build your sidebar items here
+          return SidebarItems(
+            currentIndex: pageIndex, // Manage state as needed
+            scrollController: scrollController,
+            itemSize: SidebarItemSize.large,
+            onChanged: (newIndex) {
+              setState(() {
+                pageIndex = newIndex;
+              });
+            },
+            items: const [
+              SidebarItem(
+                  leading: MacosIcon(Icons.wifi), label: Text('QR Scanner')),
+              SidebarItem(label: Text('QR Scanner')),
+            ],
+          );
+        },
+        minWidth: 200,
+      ),
+      child: [
+        ContentArea(
+          builder: (context, scrollController) {
+            return BarcodeScanner(); // Your content
+          },
+        ),
+        ContentArea(
+          builder: (context, scrollController) {
+            return const Text("QR Scanner"); // Your content
+          },
+        ),
+      ][pageIndex],
     );
   }
 }
