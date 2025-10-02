@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:qr_wifi_connect/core/constants/route_constants.dart';
-import 'package:qr_wifi_connect/presentation/pages/home/home.dart';
+import 'package:qr_wifi_connect/presentation/pages/home/home_page.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {

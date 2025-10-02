@@ -1,7 +1,9 @@
 // lib/main.dart
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:qr_wifi_connect/core/constants/route_constants.dart';
+import 'package:qr_wifi_connect/presentation/provider/theme_provider.dart';
 import 'package:qr_wifi_connect/presentation/router/route_generator.dart';
 
 Future<void> main(List<String> args) async {
@@ -10,20 +12,21 @@ Future<void> main(List<String> args) async {
   WindowManipulator.hideTitle();
   WindowManipulator.makeTitlebarTransparent();
   WindowManipulator.enableFullSizeContentView();
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // final appTheme = context.watch<AppTheme>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeProvider);
+    
     return MacosApp(
       title: 'QR App',
+      themeMode: themeMode, // Use the theme from provider
       initialRoute: RouteConstants.home,
       onGenerateRoute: RouteGenerator.generateRoute,
-      // Optional: Handle unknown routes
       onUnknownRoute: (settings) => CupertinoPageRoute(
         builder: (_) => const CupertinoPageScaffold(
           navigationBar: CupertinoNavigationBar(

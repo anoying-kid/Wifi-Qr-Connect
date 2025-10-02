@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:qr_wifi_connect/presentation/pages/home/widgets/qrcode_scanner.dart';
+import 'package:qr_wifi_connect/presentation/pages/wifi/wifi_page.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -32,8 +33,9 @@ class _HomeState extends State<Home> {
             },
             items: const [
               SidebarItem(
-                  leading: MacosIcon(Icons.wifi), label: Text('QR Scanner')),
-              SidebarItem(label: Text('QR Scanner')),
+                  leading: MacosIcon(Icons.linked_camera), label: Text('QR Scanner')),
+              SidebarItem(
+                  leading: MacosIcon(Icons.wifi), label: Text('WiFi')),
             ],
           );
         },
@@ -52,7 +54,7 @@ class _HomeState extends State<Home> {
         ),
         ContentArea(
           builder: (context, scrollController) {
-            return const Text("QR Scanner"); // Your content
+            return WifiPage(); // Your content
           },
         ),
       ][pageIndex],
