@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:qr/presentation/pages/home/widgets/qrcode_scanner.dart'; // Import the package
