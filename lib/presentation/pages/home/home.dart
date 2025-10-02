@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
-import 'package:qr/presentation/pages/home/widgets/qrcode_scanner.dart'; // Import the package
+import 'package:qr_wifi_connect/presentation/pages/home/widgets/qrcode_scanner.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});

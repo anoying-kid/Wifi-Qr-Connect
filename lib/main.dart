@@ -1,8 +1,8 @@
 // lib/main.dart
 import 'package:flutter/cupertino.dart';
 import 'package:macos_ui/macos_ui.dart';
-import 'package:qr/core/constants/route_constants.dart';
-import 'package:qr/presentation/router/route_generator.dart';
+import 'package:qr_wifi_connect/core/constants/route_constants.dart';
+import 'package:qr_wifi_connect/presentation/router/route_generator.dart';
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
