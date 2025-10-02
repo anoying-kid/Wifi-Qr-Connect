@@ -6,9 +6,15 @@ import 'package:qr_wifi_connect/core/constants/route_constants.dart';
 import 'package:qr_wifi_connect/presentation/provider/theme_provider.dart';
 import 'package:qr_wifi_connect/presentation/router/route_generator.dart';
 
+/// This method initializes macos_window_utils and styles the window.
+Future<void> _configureMacosWindowUtils() async {
+  const config = MacosWindowUtilsConfig();
+  await config.apply();
+}
+
 Future<void> main(List<String> args) async {
+  await _configureMacosWindowUtils();
   WidgetsFlutterBinding.ensureInitialized();
-  await WindowManipulator.initialize();
   WindowManipulator.hideTitle();
   WindowManipulator.makeTitlebarTransparent();
   WindowManipulator.enableFullSizeContentView();

@@ -10,6 +10,10 @@ class WifiPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeProvider);
+    final brightness = MediaQuery.of(context).platformBrightness;
+    
+    final isDark = themeMode == ThemeMode.dark ||
+    (themeMode == ThemeMode.system && brightness == Brightness.dark);
     
     return PrettyQrView.data(
       data: 'lorem ipsum dolor sit amet',
@@ -17,7 +21,7 @@ class WifiPage extends ConsumerWidget {
         quietZone: PrettyQrQuietZone.standart,
         shape: PrettyQrShape.custom(
           PrettyQrSmoothSymbol(
-            color: themeMode == ThemeMode.dark ? MacosColors.white : MacosColors.black,
+            color: isDark ? MacosColors.white : MacosColors.black,
           ),
         ),
       ),
