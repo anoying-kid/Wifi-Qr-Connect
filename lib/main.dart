@@ -13,7 +13,12 @@ Future<void> _configureMacosWindowUtils() async {
 }
 
 Future<void> main(List<String> args) async {
+
   await _configureMacosWindowUtils();
+  
+  // Set minimum size to prevent window from getting too small
+  await WindowManipulator.setWindowMinSize(const Size(800, 600));
+
   WidgetsFlutterBinding.ensureInitialized();
   WindowManipulator.hideTitle();
   WindowManipulator.makeTitlebarTransparent();
