@@ -37,7 +37,6 @@ dependencies:
   cupertino_icons: ^1.0.2
   mobile_scanner: ^7.0.1
   flutter_platform_alert: ^0.8.0
-  macos_window_utils: ^1.9.0
   macos_ui: ^2.2.0
   pretty_qr_code: ^3.5.0
   flutter_riverpod: ^3.0.1

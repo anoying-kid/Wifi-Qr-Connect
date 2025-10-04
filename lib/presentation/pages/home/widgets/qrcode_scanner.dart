@@ -310,8 +310,8 @@ class _BarcodeScannerState extends State<BarcodeScanner>
                     child: MacosAlertDialog(
                       primaryButton: const PushButton(
                         controlSize: ControlSize.large,
-                        child: Text('Connecting...'),
                         onPressed: null,
+                        child: Text('Connecting...'),
                       ),
                       secondaryButton: PushButton(
                         controlSize: ControlSize.large,
