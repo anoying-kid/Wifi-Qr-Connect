@@ -42,8 +42,8 @@ class _HomeState extends State<Home> {
         minWidth: 200,
         bottom: const MacosListTile(
             leading: MacosIcon(CupertinoIcons.profile_circled),
-            title: Text('Login'),
-            subtitle: Text('login@apple.com'),
+            title: Text('QR WiFi'),
+            subtitle: Text('Version 2.0.0'),
           ),
       ),
       child: [
