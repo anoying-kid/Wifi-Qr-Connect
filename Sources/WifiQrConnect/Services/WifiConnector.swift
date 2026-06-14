@@ -26,6 +26,12 @@ public class WifiConnector {
                 throw WifiConnectorError.noInterface
             }
 
+            let currentSSID = interface.ssid()?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let targetSSID = details.ssid.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let current = currentSSID, current.caseInsensitiveCompare(targetSSID) == .orderedSame {
+                return
+            }
+
             let ssidData = details.ssid.data(using: .utf8)
 
             // Scan for networks matching the SSID, including hidden networks if specified.

@@ -13,6 +13,9 @@ struct WifiView: View {
     @State private var generatedImage: NSImage? = nil
     @State private var isSavedToHistory = false
     @State private var isDetecting = false
+    @State private var isCustomNetwork = false
+    @State private var connectedSSID: String? = nil
+    @StateObject private var locationManager = LocationManager.shared
 
     /// Options for security type
     let securityOptions = [
@@ -22,7 +25,8 @@ struct WifiView: View {
     ]
 
     private var qrPayload: String {
-        let escapedSSID = escape(ssid)
+        let targetSSID = isCustomNetwork ? ssid : (connectedSSID ?? "")
+        let escapedSSID = escape(targetSSID)
         let escapedPassword = escape(password)
         let hiddenSegment = isHidden ? "H:true;" : ""
         let passwordSegment = security == "nopass" ? "" : "P:\(escapedPassword);"
@@ -37,33 +41,59 @@ struct WifiView: View {
                     Text("Wi-Fi Info & Share")
                         .font(.title)
                         .fontWeight(.bold)
-                    Text("Share your connected Wi-Fi or generate a QR code for any network.")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+
+                    if isCustomNetwork {
+                        Text("Generate a QR code for any network manually.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("Share your currently connected Wi-Fi network.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
                 }
 
                 VStack(alignment: .leading, spacing: 14) {
-                    // SSID Input
+                    // Network SSID Display
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Network Name (SSID)")
                             .fontWeight(.semibold)
                             .font(.subheadline)
 
-                        HStack {
+                        if isCustomNetwork {
                             TextField("Enter SSID", text: $ssid)
                                 .textFieldStyle(.roundedBorder)
                                 .font(.system(.body, design: .monospaced))
-
-                            Button(action: detectCurrentWifi) {
+                        } else {
+                            HStack {
                                 if isDetecting {
                                     ProgressView()
                                         .controlSize(.small)
+                                    Text("Detecting connected network...")
+                                        .foregroundColor(.secondary)
+                                        .font(.callout)
+                                } else if let activeSSID = connectedSSID {
+                                    Image(systemName: "wifi")
+                                        .foregroundColor(.accentColor)
+                                    Text(activeSSID)
+                                        .font(.system(.headline, design: .monospaced))
                                 } else {
+                                    Image(systemName: "wifi.slash")
+                                        .foregroundColor(.secondary)
+                                    Text("No Connected Wi-Fi")
+                                        .foregroundColor(.secondary)
+                                        .font(.headline)
+                                }
+
+                                Spacer()
+
+                                Button(action: detectCurrentWifi) {
                                     Image(systemName: "arrow.clockwise")
                                 }
+                                .disabled(isDetecting)
+                                .help("Auto-detect current WiFi network")
                             }
-                            .disabled(isDetecting)
-                            .help("Auto-detect current WiFi network")
+                            .padding(.vertical, 4)
                         }
                     }
 
@@ -79,6 +109,7 @@ struct WifiView: View {
                             }
                         }
                         .pickerStyle(.segmented)
+                        .disabled(!isCustomNetwork && isSavedToHistory)
                     }
 
                     // Password Input
@@ -125,15 +156,18 @@ struct WifiView: View {
                                 }
                                 .buttonStyle(.plain)
                             }
+                            .disabled(!isCustomNetwork && isSavedToHistory)
                         }
                     }
 
-                    // Hidden Network Toggle
-                    Toggle("Hidden Network", isOn: $isHidden)
-                        .fontWeight(.semibold)
-                        .font(.subheadline)
-                        .toggleStyle(.checkbox)
-                        .padding(.top, 4)
+                    // Hidden Network Toggle (only in custom network mode)
+                    if isCustomNetwork {
+                        Toggle("Hidden Network", isOn: $isHidden)
+                            .fontWeight(.semibold)
+                            .font(.subheadline)
+                            .toggleStyle(.checkbox)
+                            .padding(.top, 4)
+                    }
                 }
                 .padding()
                 .background(
@@ -145,8 +179,72 @@ struct WifiView: View {
                         )
                 )
 
+                // Details description & settings link for non-history network
+                if !isCustomNetwork, connectedSSID != nil {
+                    if isSavedToHistory {
+                        HStack(spacing: 10) {
+                            Image(systemName: "checkmark.seal.fill")
+                                .foregroundColor(.green)
+                                .font(.title3)
+
+                            Text("Password loaded from history. Other devices can scan the QR code to connect instantly.")
+                                .font(.callout)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.green.opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.green.opacity(0.2), lineWidth: 1)
+                                )
+                        )
+                    } else {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundColor(.orange)
+                                Text("Password Not Found in History")
+                                    .font(.headline)
+                            }
+
+                            Text("Since you connected to this Wi-Fi network manually, the password is not in this app's history and cannot be fetched automatically due to macOS Keychain restrictions. You have never connected to this network using this app before.")
+                                .font(.callout)
+                                .foregroundColor(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+
+                            Text("Please copy your password from macOS Wi-Fi settings and paste it above to generate the QR code.")
+                                .font(.callout)
+                                .foregroundColor(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                            
+                            Button(action: {
+                                let settingsURL = "x-apple.systempreferences:com.apple.Wi-Fi-Settings.extension"
+                                if let url = URL(string: settingsURL) {
+                                    NSWorkspace.shared.open(url)
+                                }
+                            }) {
+                                Label("Open Wi-Fi Settings to Copy Password", systemImage: "arrow.up.forward.app")
+                                    .fontWeight(.semibold)
+                            }
+                            .buttonStyle(.link)
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.orange.opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.orange.opacity(0.2), lineWidth: 1)
+                                )
+                        )
+                    }
+                }
+
                 // History Actions
-                if !ssid.isEmpty {
+                let activeSSID = isCustomNetwork ? ssid : (connectedSSID ?? "")
+                if !activeSSID.isEmpty {
                     if isSavedToHistory {
                         Button(action: removeFromHistory) {
                             Label("Remove Saved Password", systemImage: "trash")
@@ -158,7 +256,7 @@ struct WifiView: View {
                         .controlSize(.large)
                     } else if !password.isEmpty || security == "nopass" {
                         Button(action: saveToHistory) {
-                            Label("Save to History", systemImage: "checkmark.circle")
+                            Label("Save to History & Share", systemImage: "checkmark.circle")
                                 .fontWeight(.semibold)
                                 .frame(maxWidth: .infinity)
                         }
@@ -168,6 +266,26 @@ struct WifiView: View {
                 }
 
                 Spacer()
+
+                // Mode Toggle Button
+                Button(action: {
+                    isCustomNetwork.toggle()
+                    if !isCustomNetwork {
+                        detectCurrentWifi()
+                    } else {
+                        ssid = ""
+                        password = ""
+                        security = "WPA"
+                        isHidden = false
+                        isSavedToHistory = false
+                        generatedImage = nil
+                    }
+                }) {
+                    Text(isCustomNetwork ? "← Share Connected Wi-Fi" : "Generate custom Wi-Fi QR →")
+                        .font(.callout)
+                        .foregroundColor(.accentColor)
+                }
+                .buttonStyle(.link)
             }
             .frame(maxWidth: 380)
 
@@ -183,7 +301,8 @@ struct WifiView: View {
                         .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
                         .frame(width: 260, height: 260)
 
-                    if !ssid.isEmpty {
+                    let targetSSID = isCustomNetwork ? ssid : (connectedSSID ?? "")
+                    if !targetSSID.isEmpty {
                         if let image = generatedImage {
                             Image(nsImage: image)
                                 .resizable()
@@ -209,7 +328,8 @@ struct WifiView: View {
                     }
                 }
 
-                if let image = generatedImage, !ssid.isEmpty {
+                let targetSSID = isCustomNetwork ? ssid : (connectedSSID ?? "")
+                if let image = generatedImage, !targetSSID.isEmpty {
                     Button(action: { saveImage(image) }) {
                         Label("Save QR Image", systemImage: "square.and.arrow.down")
                             .fontWeight(.semibold)
@@ -225,13 +345,17 @@ struct WifiView: View {
         }
         .padding(30)
         .onAppear {
-            // Request location permission on load
-            CLLocationManager().requestWhenInUseAuthorization()
+            locationManager.requestAuthorization()
+            detectCurrentWifi()
+        }
+        .onChange(of: locationManager.authorizationStatus) { _, _ in
             detectCurrentWifi()
         }
         .onChange(of: ssid) { _, newValue in
-            checkHistoryStatus(for: newValue)
-            regenerateQR()
+            if isCustomNetwork {
+                checkHistoryStatus(for: newValue)
+                regenerateQR()
+            }
         }
         .onChange(of: password) { _, _ in
             regenerateQR()
@@ -256,8 +380,16 @@ struct WifiView: View {
             await MainActor.run {
                 isDetecting = false
                 if let ssidName = detectedSSID {
-                    ssid = ssidName
-                    checkHistoryStatus(for: ssidName)
+                    connectedSSID = ssidName
+                    if !isCustomNetwork {
+                        checkHistoryStatus(for: ssidName)
+                    }
+                } else {
+                    connectedSSID = nil
+                    if !isCustomNetwork {
+                        isSavedToHistory = false
+                        generatedImage = nil
+                    }
                 }
             }
         }
@@ -271,13 +403,19 @@ struct WifiView: View {
             isSavedToHistory = true
         } else {
             isSavedToHistory = false
+            password = ""
+            security = "WPA"
+            isHidden = false
         }
+        regenerateQR()
     }
 
     private func saveToHistory() {
-        guard !ssid.isEmpty else { return }
+        let targetSSID = isCustomNetwork ? ssid : (connectedSSID ?? "")
+        guard !targetSSID.isEmpty else { return }
+
         HistoryManager.shared.add(
-            ssid: ssid,
+            ssid: targetSSID,
             password: password,
             security: security,
             hidden: isHidden
@@ -286,8 +424,10 @@ struct WifiView: View {
     }
 
     private func removeFromHistory() {
-        guard !ssid.isEmpty else { return }
-        if let saved = HistoryManager.shared.networks.first(where: { $0.ssid == ssid }) {
+        let targetSSID = isCustomNetwork ? ssid : (connectedSSID ?? "")
+        guard !targetSSID.isEmpty else { return }
+
+        if let saved = HistoryManager.shared.networks.first(where: { $0.ssid == targetSSID }) {
             HistoryManager.shared.remove(saved)
         }
         password = ""
@@ -296,7 +436,8 @@ struct WifiView: View {
     }
 
     private func regenerateQR() {
-        guard !ssid.isEmpty else {
+        let targetSSID = isCustomNetwork ? ssid : (connectedSSID ?? "")
+        guard !targetSSID.isEmpty else {
             generatedImage = nil
             return
         }
@@ -316,9 +457,10 @@ struct WifiView: View {
     }
 
     private func saveImage(_ image: NSImage) {
+        let targetSSID = isCustomNetwork ? ssid : (connectedSSID ?? "")
         let savePanel = NSSavePanel()
         savePanel.allowedContentTypes = [.png]
-        savePanel.nameFieldStringValue = "wifi_share_\(ssid.replacingOccurrences(of: " ", with: "_")).png"
+        savePanel.nameFieldStringValue = "wifi_share_\(targetSSID.replacingOccurrences(of: " ", with: "_")).png"
 
         savePanel.begin { response in
             if response == .OK, let url = savePanel.url {

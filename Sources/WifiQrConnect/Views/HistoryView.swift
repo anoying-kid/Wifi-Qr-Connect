@@ -165,6 +165,7 @@ struct HistoryRowView: View {
     let isExpanded: Bool
     let isConnecting: Bool
     let showPassword: Bool
+    @State private var showShareQRPopover = false
 
     let onToggleExpand: () -> Void
     let onTogglePassword: () -> Void
@@ -264,15 +265,52 @@ struct HistoryRowView: View {
 
                         Spacer()
 
-                        if isConnecting {
-                            ProgressView()
-                                .controlSize(.small)
-                        } else {
-                            Button(action: onConnect) {
-                                Text("Connect")
-                                    .fontWeight(.semibold)
+                        HStack(spacing: 12) {
+                            Button(action: { showShareQRPopover.toggle() }) {
+                                Label("Connect using QR", systemImage: "qrcode")
+                                    .fontWeight(.medium)
                             }
-                            .buttonStyle(.borderedProminent)
+                            .buttonStyle(.bordered)
+                            .popover(isPresented: $showShareQRPopover, arrowEdge: .top) {
+                                VStack(spacing: 16) {
+                                    Text("Share \(network.ssid)")
+                                        .font(.headline)
+
+                                    let qrPayload = "WIFI:S:\(escape(network.ssid));T:\(network.security);P:\(escape(network.password));\(network.hidden ? "H:true;" : "");"
+                                    if let qrImage = QRGenerator.generate(from: qrPayload, size: CGSize(width: 200, height: 200)) {
+                                        Image(nsImage: qrImage)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 200, height: 200)
+                                            .padding()
+                                            .background(Color.white)
+                                            .cornerRadius(12)
+                                            .shadow(color: Color.black.opacity(0.1), radius: 5)
+                                    }
+
+                                    Button("Save QR Image") {
+                                        let qrPayload = "WIFI:S:\(escape(network.ssid));T:\(network.security);P:\(escape(network.password));\(network.hidden ? "H:true;" : "");"
+                                        if let qrImage = QRGenerator.generate(from: qrPayload, size: CGSize(width: 300, height: 300)) {
+                                            saveImage(qrImage, ssid: network.ssid)
+                                        }
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                }
+                                .padding()
+                                .frame(width: 240)
+                            }
+
+                            if isConnecting {
+                                ProgressView()
+                                    .controlSize(.small)
+                                    .frame(width: 80)
+                            } else {
+                                Button(action: onConnect) {
+                                    Text("Connect")
+                                        .fontWeight(.semibold)
+                                }
+                                .buttonStyle(.borderedProminent)
+                            }
                         }
                     }
                 }
@@ -289,6 +327,37 @@ struct HistoryRowView: View {
             RoundedRectangle(cornerRadius: 10)
                 .stroke(Color.secondary.opacity(0.1), lineWidth: 1)
         )
+    }
+
+    private func escape(_ string: String) -> String {
+        return string
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: ";", with: "\\;")
+            .replacingOccurrences(of: ":", with: "\\:")
+            .replacingOccurrences(of: ",", with: "\\,")
+    }
+
+    private func saveImage(_ image: NSImage, ssid: String) {
+        let savePanel = NSSavePanel()
+        savePanel.allowedContentTypes = [.png]
+        savePanel.nameFieldStringValue = "wifi_share_\(ssid.replacingOccurrences(of: " ", with: "_")).png"
+
+        savePanel.begin { response in
+            if response == .OK, let url = savePanel.url {
+                guard let tiffData = image.tiffRepresentation,
+                      let bitmapImage = NSBitmapImageRep(data: tiffData),
+                      let pngData = bitmapImage.representation(using: .png, properties: [:])
+                else {
+                    return
+                }
+
+                do {
+                    try pngData.write(to: url)
+                } catch {
+                    print("Error saving QR image: \(error.localizedDescription)")
+                }
+            }
+        }
     }
 
     private func formatDate(_ date: Date) -> String {

@@ -163,6 +163,7 @@ struct ScannerView: View {
         }
         .onAppear {
             checkCameraPermission()
+            LocationManager.shared.requestAuthorization()
         }
         .onChange(of: scannedText) { _, newValue in
             if let newValue = newValue {
@@ -238,14 +239,6 @@ struct ScannerView: View {
 
         if code.hasPrefix("WIFI:") {
             if let details = QRParser.parse(qrString: code) {
-                // Save scanned network to history
-                HistoryManager.shared.add(
-                    ssid: details.ssid,
-                    password: details.password,
-                    security: details.security,
-                    hidden: details.hidden
-                )
-
                 if SettingsManager.shared.autoConnect {
                     autoConnectToWifi(details: details)
                 } else {
@@ -274,6 +267,14 @@ struct ScannerView: View {
                 isConnecting = false
                 successSSID = details.ssid
                 showSuccess = true
+
+                // Save to history ONLY after a successful connection
+                HistoryManager.shared.add(
+                    ssid: details.ssid,
+                    password: details.password,
+                    security: details.security,
+                    hidden: details.hidden
+                )
             } catch {
                 isConnecting = false
                 connectionError = error.localizedDescription
