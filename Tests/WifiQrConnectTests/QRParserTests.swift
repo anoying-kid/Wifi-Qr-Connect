@@ -2,7 +2,7 @@ import Testing
 @testable import WifiQrConnect
 
 struct QRParserTests {
-    @Test func testStandardWPANetwork() {
+    @Test func standardWPANetwork() {
         let qr = "WIFI:T:WPA;S:MyNetwork;P:myPassword;;"
         let details = QRParser.parse(qrString: qr)
         #expect(details != nil)
@@ -12,7 +12,7 @@ struct QRParserTests {
         #expect(details?.hidden == false)
     }
 
-    @Test func testOpenNetwork() {
+    @Test func openNetwork() {
         let qr = "WIFI:T:nopass;S:FreeWiFi;;"
         let details = QRParser.parse(qrString: qr)
         #expect(details != nil)
@@ -22,7 +22,7 @@ struct QRParserTests {
         #expect(details?.hidden == false)
     }
 
-    @Test func testEscapedCharacters() {
+    @Test func escapedCharacters() {
         let qr = "WIFI:T:WPA;S:My\\;Semicolon\\:Colon;P:pass\\\\word;;"
         let details = QRParser.parse(qrString: qr)
         #expect(details != nil)
@@ -30,7 +30,7 @@ struct QRParserTests {
         #expect(details?.password == "pass\\word")
     }
 
-    @Test func testHiddenNetwork() {
+    @Test func hiddenNetwork() {
         let qr = "WIFI:T:WPA;S:SecretNet;P:secretPass;H:true;;"
         let details = QRParser.parse(qrString: qr)
         #expect(details != nil)
@@ -38,7 +38,7 @@ struct QRParserTests {
         #expect(details?.hidden == true)
     }
 
-    @Test func testInvalidFormat() {
+    @Test func invalidFormat() {
         #expect(QRParser.parse(qrString: "NOT_WIFI:SSID;") == nil)
         #expect(QRParser.parse(qrString: "WIFI:T:WPA;;") == nil) // no S: key
     }

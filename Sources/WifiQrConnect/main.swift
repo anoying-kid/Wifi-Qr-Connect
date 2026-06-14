@@ -2,7 +2,7 @@ import SwiftUI
 
 struct WifiQrConnectApp: App {
     @ObservedObject var settings = SettingsManager.shared
-    
+
     var colorScheme: ColorScheme? {
         switch settings.theme {
         case "Light": return .light
@@ -10,7 +10,7 @@ struct WifiQrConnectApp: App {
         default: return nil
         }
     }
-    
+
     var body: some Scene {
         WindowGroup {
             MainView()

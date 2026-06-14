@@ -2,9 +2,9 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var settings = SettingsManager.shared
-    
+
     let themeOptions = ["System", "Light", "Dark"]
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header Bar
@@ -14,17 +14,16 @@ struct SettingsView: View {
                 .padding(.horizontal, 30)
                 .padding(.top, 30)
                 .padding(.bottom, 20)
-            
+
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    
                     // Section: General Settings
                     VStack(alignment: .leading, spacing: 14) {
                         Text("General Settings")
                             .font(.headline)
                             .foregroundColor(.secondary)
                             .padding(.horizontal, 6)
-                        
+
                         VStack(alignment: .leading, spacing: 16) {
                             // Auto Connect Toggle
                             HStack {
@@ -40,9 +39,9 @@ struct SettingsView: View {
                                 Toggle("", isOn: $settings.autoConnect)
                                     .toggleStyle(.switch)
                             }
-                            
+
                             Divider()
-                            
+
                             // Play Beep Toggle
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
@@ -68,14 +67,14 @@ struct SettingsView: View {
                                 )
                         )
                     }
-                    
+
                     // Section: Appearance
                     VStack(alignment: .leading, spacing: 14) {
                         Text("Appearance")
                             .font(.headline)
                             .foregroundColor(.secondary)
                             .padding(.horizontal, 6)
-                        
+
                         VStack(alignment: .leading, spacing: 16) {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
@@ -106,14 +105,14 @@ struct SettingsView: View {
                                 )
                         )
                     }
-                    
+
                     // Section: About
                     VStack(alignment: .leading, spacing: 14) {
                         Text("About")
                             .font(.headline)
                             .foregroundColor(.secondary)
                             .padding(.horizontal, 6)
-                        
+
                         VStack(alignment: .leading, spacing: 10) {
                             HStack {
                                 Text("Application:")
@@ -122,9 +121,9 @@ struct SettingsView: View {
                                 Text("WiFi QR Connect")
                                     .foregroundColor(.secondary)
                             }
-                            
+
                             Divider()
-                            
+
                             HStack {
                                 Text("Version:")
                                     .fontWeight(.medium)
@@ -132,9 +131,9 @@ struct SettingsView: View {
                                 Text("0.1.0 (1)")
                                     .foregroundColor(.secondary)
                             }
-                            
+
                             Divider()
-                            
+
                             HStack {
                                 Text("Identifier:")
                                     .fontWeight(.medium)

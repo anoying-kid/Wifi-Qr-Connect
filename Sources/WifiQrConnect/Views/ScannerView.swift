@@ -1,25 +1,27 @@
-import SwiftUI
 @preconcurrency import AVFoundation
+import CoreMedia
+import CoreVideo
+import SwiftUI
+import Vision
 
 struct ScannerView: View {
-    @Binding var scannedWifi: WiFiDetails?
-    @Binding var selectedTab: Int?
-    
+    @State private var pendingWifi: WiFiDetails? = nil
+
     @State private var scannedText: String? = nil
     @State private var isScanning = true
     @State private var cameraPermission: AVAuthorizationStatus = .notDetermined
-    
+
     // Alert state for links/text
     @State private var showingLinkAlert = false
     @State private var showingTextAlert = false
     @State private var alertPayload = ""
-    
+
     // Auto-connection states
     @State private var isConnecting = false
     @State private var connectionError: String? = nil
     @State private var showSuccess = false
     @State private var successSSID = ""
-    
+
     var body: some View {
         VStack {
             if cameraPermission == .authorized {
@@ -34,12 +36,12 @@ struct ScannerView: View {
                             )
                             .shadow(color: Color.black.opacity(0.3), radius: 10, x: 0, y: 5)
                             .frame(width: 400, height: 400)
-                        
+
                         if isScanning {
                             ScannerOverlayView()
                                 .frame(width: 400, height: 400)
                         }
-                        
+
                         if isConnecting {
                             Color.black.opacity(0.6)
                                 .cornerRadius(16)
@@ -53,30 +55,77 @@ struct ScannerView: View {
                                 )
                                 .frame(width: 400, height: 400)
                         }
+
+                        if let pending = pendingWifi {
+                            Color.black.opacity(0.5)
+                                .cornerRadius(16)
+                                .frame(width: 400, height: 400)
+
+                            VStack(spacing: 16) {
+                                Image(systemName: "wifi")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.accentColor)
+
+                                Text("Connect to Wi-Fi?")
+                                    .font(.headline)
+
+                                Text(pending.ssid)
+                                    .font(.title3)
+                                    .fontWeight(.bold)
+                                    .lineLimit(1)
+
+                                Text("Security: \(pending.security.uppercased())")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+
+                                HStack(spacing: 16) {
+                                    Button("Cancel", role: .cancel) {
+                                        pendingWifi = nil
+                                        resetScanner()
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .keyboardShortcut(.cancelAction)
+
+                                    Button("Connect") {
+                                        let details = pending
+                                        pendingWifi = nil
+                                        autoConnectToWifi(details: details)
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                }
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color(NSColor.windowBackgroundColor))
+                                    .shadow(radius: 10)
+                            )
+                            .frame(width: 320)
+                        }
                     }
-                    
+
                     Text("Align a Wi-Fi QR code within the frame to connect.")
                         .font(.callout)
                         .foregroundColor(.secondary)
                 }
                 .padding()
-                
+
             } else if cameraPermission == .notDetermined {
                 VStack(spacing: 20) {
                     Image(systemName: "camera.viewfinder")
                         .font(.system(size: 64))
                         .foregroundColor(.accentColor)
-                    
+
                     Text("Camera Access Required")
                         .font(.title2)
                         .fontWeight(.bold)
-                    
+
                     Text("This app needs camera access to scan Wi-Fi QR codes.")
                         .font(.body)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: 300)
-                    
+
                     Button("Grant Permission") {
                         requestCameraPermission()
                     }
@@ -84,23 +133,23 @@ struct ScannerView: View {
                     .controlSize(.large)
                 }
                 .padding()
-                
+
             } else {
                 VStack(spacing: 20) {
                     Image(systemName: "camera.fill.badge.ellipsis")
                         .font(.system(size: 64))
                         .foregroundColor(.red)
-                    
+
                     Text("Camera Access Denied")
                         .font(.title2)
                         .fontWeight(.bold)
-                    
+
                     Text("Please enable camera access for WifiQrConnect in System Settings > Privacy & Security > Camera.")
                         .font(.body)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: 300)
-                    
+
                     Button("Open System Settings") {
                         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera") {
                             NSWorkspace.shared.open(url)
@@ -115,7 +164,7 @@ struct ScannerView: View {
         .onAppear {
             checkCameraPermission()
         }
-        .onChange(of: scannedText) { oldValue, newValue in
+        .onChange(of: scannedText) { _, newValue in
             if let newValue = newValue {
                 handleScannedCode(newValue)
             }
@@ -125,8 +174,10 @@ struct ScannerView: View {
                 if let url = URL(string: alertPayload) {
                     NSWorkspace.shared.open(url)
                 }
+                showingLinkAlert = false
                 resetScanner()
             } onCancel: {
+                showingLinkAlert = false
                 resetScanner()
             }
         }
@@ -136,8 +187,10 @@ struct ScannerView: View {
                 if let url = URL(string: "https://www.google.com/search?q=\(query)") {
                     NSWorkspace.shared.open(url)
                 }
+                showingTextAlert = false
                 resetScanner()
             } onCancel: {
+                showingTextAlert = false
                 resetScanner()
             }
         }
@@ -162,14 +215,14 @@ struct ScannerView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    
+
     private func checkCameraPermission() {
         cameraPermission = AVCaptureDevice.authorizationStatus(for: .video)
         if cameraPermission == .notDetermined {
             requestCameraPermission()
         }
     }
-    
+
     private func requestCameraPermission() {
         AVCaptureDevice.requestAccess(for: .video) { granted in
             DispatchQueue.main.async {
@@ -177,12 +230,12 @@ struct ScannerView: View {
             }
         }
     }
-    
+
     private func handleScannedCode(_ code: String) {
         if SettingsManager.shared.playBeep {
             NSSound.beep()
         }
-        
+
         if code.hasPrefix("WIFI:") {
             if let details = QRParser.parse(qrString: code) {
                 // Save scanned network to history
@@ -192,12 +245,11 @@ struct ScannerView: View {
                     security: details.security,
                     hidden: details.hidden
                 )
-                
+
                 if SettingsManager.shared.autoConnect {
                     autoConnectToWifi(details: details)
                 } else {
-                    self.scannedWifi = details
-                    self.selectedTab = 1
+                    pendingWifi = details
                 }
             } else {
                 alertPayload = code
@@ -211,11 +263,11 @@ struct ScannerView: View {
             showingTextAlert = true
         }
     }
-    
+
     private func autoConnectToWifi(details: WiFiDetails) {
         isConnecting = true
         connectionError = nil
-        
+
         Task {
             do {
                 try await WifiConnector.connect(details: details)
@@ -228,7 +280,7 @@ struct ScannerView: View {
             }
         }
     }
-    
+
     private func resetScanner() {
         scannedText = nil
         isScanning = true
@@ -240,92 +292,95 @@ struct ScannerView: View {
 struct CameraScannerView: NSViewRepresentable {
     @Binding var scannedText: String?
     @Binding var isScanning: Bool
-    
+
     @MainActor
-    class Coordinator: NSObject, AVCaptureMetadataOutputObjectsDelegate {
+    class Coordinator: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
         var parent: CameraScannerView
         var session: AVCaptureSession?
-        var observation: NSKeyValueObservation?
-        
+
         init(parent: CameraScannerView) {
             self.parent = parent
         }
-        
-        nonisolated func metadataOutput(_ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
-            let qrString = metadataObjects
-                .compactMap { $0 as? AVMetadataMachineReadableCodeObject }
-                .first(where: { $0.type == .qr })?
-                .stringValue
-            
-            guard let qrString = qrString else { return }
-            
-            Task { @MainActor in
-                guard self.parent.isScanning else { return }
-                self.parent.scannedText = qrString
-                self.parent.isScanning = false
-                
-                let session = self.session
-                DispatchQueue.global(qos: .userInitiated).async {
-                    session?.stopRunning()
+
+        nonisolated func captureOutput(_: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from _: AVCaptureConnection) {
+            guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+
+            let request = VNDetectBarcodesRequest()
+            request.symbologies = [.qr]
+
+            let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .up, options: [:])
+            do {
+                try handler.perform([request])
+                if let results = request.results,
+                   let firstQR = results.first(where: { $0.symbology == .qr }),
+                   let payload = firstQR.payloadStringValue
+                {
+                    Task { @MainActor in
+                        guard self.parent.isScanning else { return }
+                        self.parent.scannedText = payload
+                        self.parent.isScanning = false
+
+                        let session = self.session
+                        DispatchQueue.global(qos: .userInitiated).async {
+                            session?.stopRunning()
+                        }
+                    }
                 }
+            } catch {
+                // Ignore errors and continue to next frame
             }
         }
     }
-    
+
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
     }
-    
+
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
-        
+
         let session = AVCaptureSession()
         context.coordinator.session = session
-        
+
         guard let videoCaptureDevice = AVCaptureDevice.default(for: .video) else { return view }
         let videoInput: AVCaptureDeviceInput
-        
+
         do {
             videoInput = try AVCaptureDeviceInput(device: videoCaptureDevice)
         } catch {
             return view
         }
-        
+
         if session.canAddInput(videoInput) {
             session.addInput(videoInput)
         } else {
             return view
         }
-        
-        let metadataOutput = AVCaptureMetadataOutput()
-        
-        if session.canAddOutput(metadataOutput) {
-            session.addOutput(metadataOutput)
-            metadataOutput.setMetadataObjectsDelegate(context.coordinator, queue: DispatchQueue.main)
-            
-            // Set up KVO to safely set metadataObjectTypes to .qr as soon as the session is running
-            context.coordinator.observation = metadataOutput.observe(\.availableMetadataObjectTypes, options: [.initial, .new]) { output, _ in
-                if output.availableMetadataObjectTypes.contains(.qr) {
-                    output.metadataObjectTypes = [.qr]
-                }
-            }
+
+        let videoDataOutput = AVCaptureVideoDataOutput()
+
+        if session.canAddOutput(videoDataOutput) {
+            session.addOutput(videoDataOutput)
+            videoDataOutput.alwaysDiscardsLateVideoFrames = true
+            let videoQueue = DispatchQueue(label: "com.example.wifiqrconnect.videoQueue", qos: .userInteractive)
+            videoDataOutput.setSampleBufferDelegate(context.coordinator, queue: videoQueue)
         } else {
             return view
         }
-        
+
         let previewLayer = AVCaptureVideoPreviewLayer(session: session)
         previewLayer.videoGravity = .resizeAspectFill
-        view.layer = previewLayer
         view.wantsLayer = true
-        
+        view.layer = previewLayer
+
         DispatchQueue.global(qos: .userInitiated).async {
             session.startRunning()
         }
-        
+
         return view
     }
-    
-    func updateNSView(_ nsView: NSView, context: Context) {
+
+    func updateNSView(_: NSView, context: Context) {
         let session = context.coordinator.session
         let scanning = isScanning
         DispatchQueue.global(qos: .userInitiated).async {
@@ -342,8 +397,8 @@ struct CameraScannerView: NSViewRepresentable {
             }
         }
     }
-    
-    static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
+
+    static func dismantleNSView(_: NSView, coordinator: Coordinator) {
         let session = coordinator.session
         DispatchQueue.global(qos: .userInitiated).async {
             if let session = session, session.isRunning {
@@ -357,14 +412,14 @@ struct CameraScannerView: NSViewRepresentable {
 
 struct ScannerOverlayView: View {
     @State private var scanPosition: CGFloat = -180
-    
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
                 BracketsShape()
                     .stroke(Color.accentColor, lineWidth: 4)
                     .opacity(0.8)
-                
+
                 Rectangle()
                     .fill(
                         LinearGradient(
@@ -394,27 +449,27 @@ struct BracketsShape: Shape {
         var path = Path()
         let length: CGFloat = 30
         let gap: CGFloat = 5
-        
+
         // Top Left
         path.move(to: CGPoint(x: rect.minX + gap, y: rect.minY + gap + length))
         path.addLine(to: CGPoint(x: rect.minX + gap, y: rect.minY + gap))
         path.addLine(to: CGPoint(x: rect.minX + gap + length, y: rect.minY + gap))
-        
+
         // Top Right
         path.move(to: CGPoint(x: rect.maxX - gap - length, y: rect.minY + gap))
         path.addLine(to: CGPoint(x: rect.maxX - gap, y: rect.minY + gap))
         path.addLine(to: CGPoint(x: rect.maxX - gap, y: rect.minY + gap + length))
-        
+
         // Bottom Right
         path.move(to: CGPoint(x: rect.maxX - gap, y: rect.maxY - gap - length))
         path.addLine(to: CGPoint(x: rect.maxX - gap, y: rect.maxY - gap))
         path.addLine(to: CGPoint(x: rect.maxX - gap - length, y: rect.maxY - gap))
-        
+
         // Bottom Left
         path.move(to: CGPoint(x: rect.minX + gap + length, y: rect.maxY - gap))
         path.addLine(to: CGPoint(x: rect.minX + gap, y: rect.maxY - gap))
         path.addLine(to: CGPoint(x: rect.minX + gap, y: rect.maxY - gap - length))
-        
+
         return path
     }
 }
@@ -425,33 +480,33 @@ struct LinkPromptView: View {
     let urlStr: String
     let onConfirm: () -> Void
     let onCancel: () -> Void
-    
+
     var body: some View {
         VStack(spacing: 20) {
             Image(systemName: "safari")
                 .font(.system(size: 48))
                 .foregroundColor(.accentColor)
-            
+
             Text("Open Link?")
                 .font(.headline)
-            
+
             Text("Scanned URL:")
                 .font(.caption)
                 .foregroundColor(.secondary)
-            
+
             Text(urlStr)
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
                 .padding(.horizontal)
-            
+
             HStack(spacing: 12) {
                 Button("Cancel", role: .cancel) {
                     onCancel()
                 }
                 .keyboardShortcut(.cancelAction)
-                
+
                 Button("Open Safari") {
                     onConfirm()
                 }
@@ -467,33 +522,33 @@ struct TextPromptView: View {
     let text: String
     let onConfirm: () -> Void
     let onCancel: () -> Void
-    
+
     var body: some View {
         VStack(spacing: 20) {
             Image(systemName: "doc.text.magnifyingglass")
                 .font(.system(size: 48))
                 .foregroundColor(.accentColor)
-            
+
             Text("Search Google?")
                 .font(.headline)
-            
+
             Text("Scanned Content:")
                 .font(.caption)
                 .foregroundColor(.secondary)
-            
+
             Text(text)
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
                 .padding(.horizontal)
-            
+
             HStack(spacing: 12) {
                 Button("Cancel", role: .cancel) {
                     onCancel()
                 }
                 .keyboardShortcut(.cancelAction)
-                
+
                 Button("Search Google") {
                     onConfirm()
                 }

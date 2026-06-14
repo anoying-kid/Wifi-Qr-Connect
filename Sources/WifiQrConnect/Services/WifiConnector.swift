@@ -1,5 +1,5 @@
-import Foundation
 import CoreWLAN
+import Foundation
 
 public enum WifiConnectorError: LocalizedError {
     case noInterface
@@ -10,9 +10,9 @@ public enum WifiConnectorError: LocalizedError {
         switch self {
         case .noInterface:
             return "No Wi-Fi interface found."
-        case .networkNotFound(let ssid):
+        case let .networkNotFound(ssid):
             return "Wi-Fi network '\(ssid)' not found in scan results. Please make sure it is in range."
-        case .associationFailed(let reason):
+        case let .associationFailed(reason):
             return "Failed to connect to the network: \(reason)"
         }
     }
@@ -27,7 +27,7 @@ public class WifiConnector {
             }
 
             let ssidData = details.ssid.data(using: .utf8)
-            
+
             // Scan for networks matching the SSID, including hidden networks if specified.
             let networks: Set<CWNetwork>
             do {

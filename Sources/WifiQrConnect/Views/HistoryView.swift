@@ -4,14 +4,14 @@ struct HistoryView: View {
     @ObservedObject var history = HistoryManager.shared
     @State private var searchText = ""
     @State private var expandedNetworkId: UUID? = nil
-    
+
     // Connection states
     @State private var connectingNetworkId: UUID? = nil
     @State private var connectionError: String? = nil
     @State private var showSuccess = false
     @State private var successSSID = ""
     @State private var showPasswordMap: [UUID: Bool] = [:]
-    
+
     var filteredNetworks: [SavedNetwork] {
         if searchText.isEmpty {
             return history.networks
@@ -19,7 +19,7 @@ struct HistoryView: View {
             return history.networks.filter { $0.ssid.localizedCaseInsensitiveContains(searchText) }
         }
     }
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Header Bar
@@ -27,9 +27,9 @@ struct HistoryView: View {
                 Text("Scan History")
                     .font(.title)
                     .fontWeight(.bold)
-                
+
                 Spacer()
-                
+
                 if !history.networks.isEmpty {
                     Button(role: .destructive, action: {
                         history.clearAll()
@@ -43,7 +43,7 @@ struct HistoryView: View {
             .padding(.horizontal, 30)
             .padding(.top, 30)
             .padding(.bottom, 15)
-            
+
             // Search Bar
             HStack {
                 Image(systemName: "magnifyingglass")
@@ -67,7 +67,7 @@ struct HistoryView: View {
             )
             .padding(.horizontal, 30)
             .padding(.bottom, 15)
-            
+
             if filteredNetworks.isEmpty {
                 VStack(spacing: 16) {
                     Spacer()
@@ -121,7 +121,7 @@ struct HistoryView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .alert("Connection Successful", isPresented: $showSuccess) {
-            Button("OK", role: .cancel) { }
+            Button("OK", role: .cancel) {}
         } message: {
             Text("Successfully connected to \(successSSID)!")
         }
@@ -129,25 +129,25 @@ struct HistoryView: View {
             get: { connectionError != nil },
             set: { if !$0 { connectionError = nil } }
         )) {
-            Button("OK", role: .cancel) { }
+            Button("OK", role: .cancel) {}
         } message: {
             if let error = connectionError {
                 Text(error)
             }
         }
     }
-    
+
     private func connectToNetwork(_ network: SavedNetwork) {
         connectingNetworkId = network.id
         connectionError = nil
-        
+
         Task {
             do {
                 try await WifiConnector.connect(details: network.wifiDetails)
                 connectingNetworkId = nil
                 successSSID = network.ssid
                 showSuccess = true
-                
+
                 // Refresh scan history date
                 history.add(ssid: network.ssid, password: network.password, security: network.security, hidden: network.hidden)
             } catch {
@@ -165,31 +165,31 @@ struct HistoryRowView: View {
     let isExpanded: Bool
     let isConnecting: Bool
     let showPassword: Bool
-    
+
     let onToggleExpand: () -> Void
     let onTogglePassword: () -> Void
     let onConnect: () -> Void
     let onDelete: () -> Void
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 14) {
                 Image(systemName: network.security == "nopass" ? "wifi" : "wifi.lock")
                     .font(.title3)
                     .foregroundColor(.accentColor)
-                
+
                 VStack(alignment: .leading, spacing: 2) {
                     Text(network.ssid)
                         .font(.headline)
                         .fontWeight(.medium)
-                    
+
                     Text(formatDate(network.dateScanned))
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
-                
+
                 Spacer()
-                
+
                 HStack(spacing: 12) {
                     Button(action: onToggleExpand) {
                         Image(systemName: isExpanded ? "chevron.up.circle.fill" : "chevron.down.circle.fill")
@@ -197,7 +197,7 @@ struct HistoryRowView: View {
                             .foregroundColor(.secondary)
                     }
                     .buttonStyle(.plain)
-                    
+
                     Button(action: onDelete) {
                         Image(systemName: "trash")
                             .foregroundColor(.secondary)
@@ -208,11 +208,11 @@ struct HistoryRowView: View {
             }
             .contentShape(Rectangle())
             .onTapGesture(perform: onToggleExpand)
-            
+
             if isExpanded {
                 VStack(alignment: .leading, spacing: 12) {
                     Divider()
-                    
+
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Security Type")
@@ -221,9 +221,9 @@ struct HistoryRowView: View {
                             Text(network.security.uppercased())
                                 .font(.subheadline)
                         }
-                        
+
                         Spacer()
-                        
+
                         VStack(alignment: .trailing, spacing: 4) {
                             Text("Hidden Network")
                                 .font(.caption)
@@ -232,13 +232,13 @@ struct HistoryRowView: View {
                                 .font(.subheadline)
                         }
                     }
-                    
+
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Password")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-                            
+
                             if network.password.isEmpty {
                                 Text("No password (Open)")
                                     .font(.subheadline)
@@ -252,7 +252,7 @@ struct HistoryRowView: View {
                                         Text(String(repeating: "•", count: 8))
                                             .font(.system(.subheadline, design: .monospaced))
                                     }
-                                    
+
                                     Button(action: onTogglePassword) {
                                         Image(systemName: showPassword ? "eye.slash" : "eye")
                                             .foregroundColor(.secondary)
@@ -261,9 +261,9 @@ struct HistoryRowView: View {
                                 }
                             }
                         }
-                        
+
                         Spacer()
-                        
+
                         if isConnecting {
                             ProgressView()
                                 .controlSize(.small)
@@ -290,7 +290,7 @@ struct HistoryRowView: View {
                 .stroke(Color.secondary.opacity(0.1), lineWidth: 1)
         )
     }
-    
+
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
