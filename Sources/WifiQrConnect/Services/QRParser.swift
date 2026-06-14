@@ -1,6 +1,6 @@
 import Foundation
 
-public struct WiFiDetails: Equatable {
+public struct WiFiDetails: Equatable, Sendable {
     public let ssid: String
     public let password: String
     public let security: String // WPA, WEP, nopass
