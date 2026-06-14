@@ -12,6 +12,9 @@ struct MainView: View {
                 
                 Label("Wi-Fi Info", systemImage: "wifi")
                     .tag(1 as Int?)
+                
+                Label("Generate QR", systemImage: "qrcode")
+                    .tag(2 as Int?)
             }
             .listStyle(.sidebar)
             .navigationTitle("WiFi QR Connect")
@@ -19,8 +22,10 @@ struct MainView: View {
         } detail: {
             if selectedTab == 0 {
                 ScannerView(scannedWifi: $scannedWifi, selectedTab: $selectedTab)
-            } else {
+            } else if selectedTab == 1 {
                 WifiView(wifiDetails: scannedWifi)
+            } else {
+                GenerateQRView()
             }
         }
         .frame(minWidth: 720, minHeight: 480)
