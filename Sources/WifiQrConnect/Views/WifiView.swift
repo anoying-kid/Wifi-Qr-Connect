@@ -1,3 +1,4 @@
+import CoreLocation
 import CoreWLAN
 import SwiftUI
 import UniformTypeIdentifiers
@@ -257,6 +258,10 @@ struct WifiView: View {
             }
         }
         .onAppear {
+            LocationAuthorizer.shared.requestPermission()
+            detectCurrentWifi()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("LocationAuthorizationChanged"))) { _ in
             detectCurrentWifi()
         }
         .onChange(of: enteredPassword) { _, _ in

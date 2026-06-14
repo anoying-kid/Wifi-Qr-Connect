@@ -1,3 +1,4 @@
+import CoreLocation
 import CoreWLAN
 import SwiftUI
 import UniformTypeIdentifiers
@@ -174,6 +175,10 @@ struct GenerateQRView: View {
         }
         .padding(30)
         .onAppear {
+            LocationAuthorizer.shared.requestPermission()
+            detectCurrentSSID()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("LocationAuthorizationChanged"))) { _ in
             detectCurrentSSID()
         }
         .onChange(of: qrPayload) { _, _ in
