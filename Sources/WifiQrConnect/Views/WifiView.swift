@@ -4,6 +4,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct WifiView: View {
+    @StateObject private var locationAuthorizer = LocationAuthorizer()
     @State private var currentSSID: String? = nil
     @State private var enteredPassword = ""
     @State private var security = "WPA"
@@ -258,10 +259,10 @@ struct WifiView: View {
             }
         }
         .onAppear {
-            LocationAuthorizer.shared.requestPermission()
+            locationAuthorizer.requestPermission()
             detectCurrentWifi()
         }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("LocationAuthorizationChanged"))) { _ in
+        .onChange(of: locationAuthorizer.isAuthorized) { _, _ in
             detectCurrentWifi()
         }
         .onChange(of: enteredPassword) { _, _ in

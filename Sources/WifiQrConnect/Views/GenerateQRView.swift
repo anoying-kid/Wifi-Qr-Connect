@@ -4,6 +4,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct GenerateQRView: View {
+    @StateObject private var locationAuthorizer = LocationAuthorizer()
     @State private var ssid = ""
     @State private var password = ""
     @State private var security = "WPA" // WPA, WEP, nopass
@@ -175,10 +176,10 @@ struct GenerateQRView: View {
         }
         .padding(30)
         .onAppear {
-            LocationAuthorizer.shared.requestPermission()
+            locationAuthorizer.requestPermission()
             detectCurrentSSID()
         }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("LocationAuthorizationChanged"))) { _ in
+        .onChange(of: locationAuthorizer.isAuthorized) { _, _ in
             detectCurrentSSID()
         }
         .onChange(of: qrPayload) { _, _ in
