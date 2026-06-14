@@ -15,7 +15,7 @@ struct WifiView: View {
     @State private var isDetecting = false
     @State private var isCustomNetwork = false
     @State private var connectedSSID: String? = nil
-    @StateObject private var locationManager = LocationManager.shared
+    @ObservedObject private var locationManager = LocationManager.shared
 
     /// Options for security type
     let securityOptions = [
@@ -212,13 +212,11 @@ struct WifiView: View {
                             Text("Since you connected to this Wi-Fi network manually, the password is not in this app's history and cannot be fetched automatically due to macOS Keychain restrictions. You have never connected to this network using this app before.")
                                 .font(.callout)
                                 .foregroundColor(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
 
                             Text("Please copy your password from macOS Wi-Fi settings and paste it above to generate the QR code.")
                                 .font(.callout)
                                 .foregroundColor(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                            
+
                             Button(action: {
                                 let settingsURL = "x-apple.systempreferences:com.apple.Wi-Fi-Settings.extension"
                                 if let url = URL(string: settingsURL) {

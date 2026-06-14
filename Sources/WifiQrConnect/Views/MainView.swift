@@ -26,14 +26,17 @@ struct MainView: View {
             .navigationTitle("WiFi QR Connect")
             .frame(minWidth: 180)
         } detail: {
-            if selectedTab == 0 {
+            switch selectedTab {
+            case 0:
                 ScannerView()
-            } else if selectedTab == 1 {
+            case 1:
                 WifiView()
-            } else if selectedTab == 2 {
+            case 2:
                 HistoryView()
-            } else {
+            case 3:
                 SettingsView()
+            default:
+                ScannerView()
             }
         }
         .frame(minWidth: 720, minHeight: 480)

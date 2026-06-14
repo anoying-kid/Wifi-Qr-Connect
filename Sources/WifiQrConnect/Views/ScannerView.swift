@@ -21,6 +21,10 @@ struct ScannerView: View {
     @State private var connectionError: String? = nil
     @State private var showSuccess = false
     @State private var successSSID = ""
+    
+    // Cooldown state
+    @State private var lastScannedCode: String? = nil
+    @State private var lastScannedTime: Date = .distantPast
 
     var body: some View {
         VStack {
@@ -233,6 +237,16 @@ struct ScannerView: View {
     }
 
     private func handleScannedCode(_ code: String) {
+        let now = Date()
+        if code == lastScannedCode, now.timeIntervalSince(lastScannedTime) < 3.0 {
+            // Ignore the same code if scanned within 3 seconds
+            resetScanner()
+            return
+        }
+        
+        lastScannedCode = code
+        lastScannedTime = now
+        
         if SettingsManager.shared.playBeep {
             NSSound.beep()
         }
@@ -339,49 +353,63 @@ struct CameraScannerView: NSViewRepresentable {
 
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
-
-        let session = AVCaptureSession()
-        context.coordinator.session = session
-
-        guard let videoCaptureDevice = AVCaptureDevice.default(for: .video) else { return view }
-        let videoInput: AVCaptureDeviceInput
-
-        do {
-            videoInput = try AVCaptureDeviceInput(device: videoCaptureDevice)
-        } catch {
-            return view
-        }
-
-        if session.canAddInput(videoInput) {
-            session.addInput(videoInput)
-        } else {
-            return view
-        }
-
-        let videoDataOutput = AVCaptureVideoDataOutput()
-
-        if session.canAddOutput(videoDataOutput) {
-            session.addOutput(videoDataOutput)
-            videoDataOutput.alwaysDiscardsLateVideoFrames = true
-            let videoQueue = DispatchQueue(label: "com.example.wifiqrconnect.videoQueue", qos: .userInteractive)
-            videoDataOutput.setSampleBufferDelegate(context.coordinator, queue: videoQueue)
-        } else {
-            return view
-        }
-
-        let previewLayer = AVCaptureVideoPreviewLayer(session: session)
-        previewLayer.videoGravity = .resizeAspectFill
         view.wantsLayer = true
-        view.layer = previewLayer
 
-        DispatchQueue.global(qos: .userInitiated).async {
-            session.startRunning()
+        // IMPORTANT: Defer AVCaptureSession setup to AFTER the layout cycle.
+        // AVFoundation can throw ObjC exceptions internally during session
+        // configuration (e.g. AVCaptureMetadataOutput_Tundra queries).
+        // If this happens inside AppKit's constraint update observer,
+        // the exception cannot be caught and terminates the process.
+        DispatchQueue.main.async {
+            self.setupCaptureSession(in: view, coordinator: context.coordinator)
         }
 
         return view
     }
 
-    func updateNSView(_: NSView, context: Context) {
+    private func setupCaptureSession(in view: NSView, coordinator: Coordinator) {
+        guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized else { return }
+
+        let session = AVCaptureSession()
+        coordinator.session = session
+
+        guard let videoCaptureDevice = AVCaptureDevice.default(for: .video) else { return }
+        let videoInput: AVCaptureDeviceInput
+
+        do {
+            videoInput = try AVCaptureDeviceInput(device: videoCaptureDevice)
+        } catch {
+            return
+        }
+
+        guard session.canAddInput(videoInput) else { return }
+        session.addInput(videoInput)
+
+        let videoDataOutput = AVCaptureVideoDataOutput()
+
+        guard session.canAddOutput(videoDataOutput) else { return }
+        session.addOutput(videoDataOutput)
+        videoDataOutput.alwaysDiscardsLateVideoFrames = true
+        let videoQueue = DispatchQueue(label: "com.example.wifiqrconnect.videoQueue", qos: .userInteractive)
+        videoDataOutput.setSampleBufferDelegate(coordinator, queue: videoQueue)
+
+        let previewLayer = AVCaptureVideoPreviewLayer(session: session)
+        previewLayer.videoGravity = .resizeAspectFill
+        previewLayer.frame = view.bounds
+        previewLayer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
+        view.layer = previewLayer
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            session.startRunning()
+        }
+    }
+
+    func updateNSView(_ view: NSView, context: Context) {
+        // Resize preview layer to match view bounds
+        if let previewLayer = view.layer as? AVCaptureVideoPreviewLayer {
+            previewLayer.frame = view.bounds
+        }
+
         let session = context.coordinator.session
         let scanning = isScanning
         DispatchQueue.global(qos: .userInitiated).async {
@@ -399,8 +427,9 @@ struct CameraScannerView: NSViewRepresentable {
         }
     }
 
-    static func dismantleNSView(_: NSView, coordinator: Coordinator) {
+    static func dismantleNSView(_ view: NSView, coordinator: Coordinator) {
         let session = coordinator.session
+        coordinator.session = nil
         DispatchQueue.global(qos: .userInitiated).async {
             if let session = session, session.isRunning {
                 session.stopRunning()

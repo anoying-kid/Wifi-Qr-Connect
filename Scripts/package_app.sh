@@ -64,7 +64,9 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>LSUIElement</key><${LSUI_VALUE}/>
     <key>CFBundleIconFile</key><string>Icon</string>
     <key>NSCameraUsageDescription</key><string>This app requires camera access to scan Wi-Fi QR codes.</string>
+    <key>NSLocationUsageDescription</key><string>This app requires location access to detect the currently connected Wi-Fi network name (SSID).</string>
     <key>NSLocationWhenInUseUsageDescription</key><string>This app requires location access to detect the currently connected Wi-Fi network name (SSID).</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key><string>This app requires location access to detect the currently connected Wi-Fi network name (SSID).</string>
     <key>BuildTimestamp</key><string>${BUILD_TIMESTAMP}</string>
     <key>GitCommit</key><string>${GIT_COMMIT}</string>
 </dict>
