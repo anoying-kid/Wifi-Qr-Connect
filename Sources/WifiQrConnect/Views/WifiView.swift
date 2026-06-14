@@ -4,14 +4,15 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct WifiView: View {
-    @StateObject private var locationAuthorizer = LocationAuthorizer()
-    @State private var currentSSID: String? = nil
-    @State private var enteredPassword = ""
+    @State private var ssid = ""
+    @State private var password = ""
     @State private var security = "WPA"
+    @State private var isHidden = false
     @State private var showPassword = false
     @State private var showInfoPopover = false
     @State private var generatedImage: NSImage? = nil
     @State private var isSavedToHistory = false
+    @State private var isDetecting = false
 
     /// Options for security type
     let securityOptions = [
@@ -21,311 +22,285 @@ struct WifiView: View {
     ]
 
     private var qrPayload: String {
-        guard let ssid = currentSSID else { return "" }
         let escapedSSID = escape(ssid)
-        let escapedPassword = escape(enteredPassword)
+        let escapedPassword = escape(password)
+        let hiddenSegment = isHidden ? "H:true;" : ""
         let passwordSegment = security == "nopass" ? "" : "P:\(escapedPassword);"
-        return "WIFI:S:\(escapedSSID);T:\(security);\(passwordSegment);"
+        return "WIFI:S:\(escapedSSID);T:\(security);\(passwordSegment)\(hiddenSegment);"
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            if let ssid = currentSSID {
-                HStack(spacing: 40) {
-                    // Left Column: Details & Input
-                    VStack(alignment: .leading, spacing: 20) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Active Wi-Fi Connection")
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundColor(.accentColor)
-                                .textCase(.uppercase)
+        HStack(spacing: 40) {
+            // Left Column: Configuration Form
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Wi-Fi Info & Share")
+                        .font(.title)
+                        .fontWeight(.bold)
+                    Text("Share your connected Wi-Fi or generate a QR code for any network.")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
 
-                            Text(ssid)
-                                .font(.title)
-                                .fontWeight(.bold)
-                        }
+                VStack(alignment: .leading, spacing: 14) {
+                    // SSID Input
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Network Name (SSID)")
+                            .fontWeight(.semibold)
+                            .font(.subheadline)
 
-                        if isSavedToHistory {
-                            // Loaded from history status banner
-                            HStack(spacing: 10) {
-                                Image(systemName: "checkmark.seal.fill")
-                                    .foregroundColor(.green)
-                                    .font(.title3)
+                        HStack {
+                            TextField("Enter SSID", text: $ssid)
+                                .textFieldStyle(.roundedBorder)
+                                .font(.system(.body, design: .monospaced))
 
-                                Text("Password loaded from history. Other devices can scan the QR code to connect instantly.")
-                                    .font(.callout)
-                                    .foregroundColor(.secondary)
-                            }
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.green.opacity(0.1))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.green.opacity(0.2), lineWidth: 1)
-                                    )
-                            )
-                        } else {
-                            // Keychain restriction alert
-                            VStack(alignment: .leading, spacing: 10) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "exclamationmark.triangle.fill")
-                                        .foregroundColor(.orange)
-                                    Text("macOS Keychain Restriction")
-                                        .font(.headline)
+                            Button(action: detectCurrentWifi) {
+                                if isDetecting {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                } else {
+                                    Image(systemName: "arrow.clockwise")
                                 }
-
-                                Text("macOS prevents apps from reading Wi-Fi passwords programmatically. Please enter the password below to generate a sharing QR code.")
-                                    .font(.callout)
-                                    .foregroundColor(.secondary)
-                                    .fixedSize(horizontal: false, vertical: true)
                             }
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color(NSColor.windowBackgroundColor).opacity(0.5))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-                                    )
-                            )
+                            .disabled(isDetecting)
+                            .help("Auto-detect current WiFi network")
                         }
+                    }
 
-                        VStack(alignment: .leading, spacing: 14) {
-                            // Security Type Selection (only editable if not open)
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("Security Type")
+                    // Security Selection
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Security Type")
+                            .fontWeight(.semibold)
+                            .font(.subheadline)
+
+                        Picker("", selection: $security) {
+                            ForEach(securityOptions, id: \.1) { option in
+                                Text(option.0).tag(option.1)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+
+                    // Password Input
+                    if security != "nopass" {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text("Password")
                                     .fontWeight(.semibold)
                                     .font(.subheadline)
 
-                                Picker("", selection: $security) {
-                                    ForEach(securityOptions, id: \.1) { option in
-                                        Text(option.0).tag(option.1)
-                                    }
+                                Button(action: { showInfoPopover.toggle() }) {
+                                    Image(systemName: "info.circle")
+                                        .foregroundColor(.accentColor)
                                 }
-                                .pickerStyle(.segmented)
-                                .disabled(isSavedToHistory)
-                            }
+                                .buttonStyle(.plain)
+                                .popover(isPresented: $showInfoPopover, arrowEdge: .trailing) {
+                                    VStack(alignment: .leading, spacing: 10) {
+                                        Text("How to get your Wi-Fi password:")
+                                            .font(.headline)
 
-                            // Password Field (with Info Icon next to it)
-                            if security != "nopass" {
-                                VStack(alignment: .leading, spacing: 6) {
-                                    HStack {
-                                        Text("Password")
-                                            .fontWeight(.semibold)
-                                            .font(.subheadline)
-
-                                        if !isSavedToHistory {
-                                            Button(action: { showInfoPopover.toggle() }) {
-                                                Image(systemName: "info.circle")
-                                                    .foregroundColor(.accentColor)
-                                            }
-                                            .buttonStyle(.plain)
-                                            .popover(isPresented: $showInfoPopover, arrowEdge: .trailing) {
-                                                VStack(alignment: .leading, spacing: 10) {
-                                                    Text("How to get your Wi-Fi password:")
-                                                        .font(.headline)
-
-                                                    Text("1. Open **System Settings** > **Wi-Fi**.")
-                                                    Text("2. Click **Details...** next to your active network.")
-                                                    Text("3. Click on the dots next to **Password** to show or copy it.")
-                                                }
-                                                .padding()
-                                                .frame(width: 300)
-                                            }
-                                        }
+                                        Text("1. Open **System Settings** > **Wi-Fi**.")
+                                        Text("2. Click **Details...** next to your active network.")
+                                        Text("3. Click on the dots next to **Password** to show or copy it.")
                                     }
-
-                                    HStack {
-                                        if showPassword {
-                                            TextField("Enter Password", text: $enteredPassword)
-                                                .textFieldStyle(.roundedBorder)
-                                                .font(.system(.body, design: .monospaced))
-                                        } else {
-                                            SecureField("Enter Password", text: $enteredPassword)
-                                                .textFieldStyle(.roundedBorder)
-                                                .font(.system(.body, design: .monospaced))
-                                        }
-
-                                        Button(action: { showPassword.toggle() }) {
-                                            Image(systemName: showPassword ? "eye.slash" : "eye")
-                                                .foregroundColor(.secondary)
-                                        }
-                                        .buttonStyle(.plain)
-                                    }
-                                    .disabled(isSavedToHistory)
+                                    .padding()
+                                    .frame(width: 300)
                                 }
                             }
-                        }
 
-                        if !isSavedToHistory && !enteredPassword.isEmpty {
-                            Button(action: saveToHistory) {
-                                Label("Save to History", systemImage: "checkmark.circle")
-                                    .fontWeight(.semibold)
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .controlSize(.large)
-                        } else if isSavedToHistory {
-                            Button(action: removeFromHistory) {
-                                Label("Remove Saved Password", systemImage: "trash")
-                                    .foregroundColor(.red)
-                                    .fontWeight(.semibold)
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.large)
-                        }
+                            HStack {
+                                if showPassword {
+                                    TextField("Enter Password", text: $password)
+                                        .textFieldStyle(.roundedBorder)
+                                        .font(.system(.body, design: .monospaced))
+                                } else {
+                                    SecureField("Enter Password", text: $password)
+                                        .textFieldStyle(.roundedBorder)
+                                        .font(.system(.body, design: .monospaced))
+                                }
 
-                        Spacer()
-                    }
-                    .frame(maxWidth: 380)
-
-                    // Right Column: QR Code Preview
-                    VStack(spacing: 24) {
-                        Text("QR Code Sharing")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.white)
-                                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
-                                .frame(width: 260, height: 260)
-
-                            if let image = generatedImage {
-                                Image(nsImage: image)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .padding(20)
-                                    .frame(width: 260, height: 260)
-                            } else {
-                                VStack(spacing: 12) {
-                                    Image(systemName: "qrcode")
-                                        .font(.system(size: 48))
-                                        .foregroundColor(.secondary.opacity(0.5))
-                                    Text("Enter Wi-Fi password to generate QR Code")
-                                        .font(.caption)
+                                Button(action: { showPassword.toggle() }) {
+                                    Image(systemName: showPassword ? "eye.slash" : "eye")
                                         .foregroundColor(.secondary)
-                                        .multilineTextAlignment(.center)
                                 }
-                                .padding()
-                                .frame(width: 260, height: 260)
+                                .buttonStyle(.plain)
                             }
                         }
-
-                        if let image = generatedImage {
-                            Button(action: { saveImage(image) }) {
-                                Label("Save QR Image", systemImage: "square.and.arrow.down")
-                                    .fontWeight(.semibold)
-                                    .frame(width: 180)
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.large)
-                        }
-
-                        Spacer()
                     }
-                    .frame(maxWidth: .infinity)
+
+                    // Hidden Network Toggle
+                    Toggle("Hidden Network", isOn: $isHidden)
+                        .fontWeight(.semibold)
+                        .font(.subheadline)
+                        .toggleStyle(.checkbox)
+                        .padding(.top, 4)
                 }
-                .padding(30)
-            } else {
-                // No connected network view
-                VStack(spacing: 20) {
-                    Image(systemName: "wifi.slash")
-                        .font(.system(size: 64))
-                        .foregroundColor(.secondary)
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(NSColor.windowBackgroundColor).opacity(0.5))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                        )
+                )
 
-                    Text("No Connected Wi-Fi")
-                        .font(.title2)
-                        .fontWeight(.bold)
-
-                    Text("Connect to a Wi-Fi network in your Mac's System Settings to share it.")
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: 300)
-
-                    Button("Open Wi-Fi Settings") {
-                        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.wifi") {
-                            NSWorkspace.shared.open(url)
+                // History Actions
+                if !ssid.isEmpty {
+                    if isSavedToHistory {
+                        Button(action: removeFromHistory) {
+                            Label("Remove Saved Password", systemImage: "trash")
+                                .foregroundColor(.red)
+                                .fontWeight(.semibold)
+                                .frame(maxWidth: .infinity)
                         }
+                        .buttonStyle(.bordered)
+                        .controlSize(.large)
+                    } else if !password.isEmpty || security == "nopass" {
+                        Button(action: saveToHistory) {
+                            Label("Save to History", systemImage: "checkmark.circle")
+                                .fontWeight(.semibold)
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                    }
+                }
+
+                Spacer()
+            }
+            .frame(maxWidth: 380)
+
+            // Right Column: QR Code Preview
+            VStack(spacing: 24) {
+                Text("QR Code Sharing")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white)
+                        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+                        .frame(width: 260, height: 260)
+
+                    if !ssid.isEmpty {
+                        if let image = generatedImage {
+                            Image(nsImage: image)
+                                .resizable()
+                                .scaledToFit()
+                                .padding(20)
+                                .frame(width: 260, height: 260)
+                        } else {
+                            ProgressView()
+                                .frame(width: 260, height: 260)
+                        }
+                    } else {
+                        VStack(spacing: 12) {
+                            Image(systemName: "qrcode")
+                                .font(.system(size: 48))
+                                .foregroundColor(.secondary.opacity(0.5))
+                            Text("Enter network name to generate QR Code")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding()
+                        .frame(width: 260, height: 260)
+                    }
+                }
+
+                if let image = generatedImage, !ssid.isEmpty {
+                    Button(action: { saveImage(image) }) {
+                        Label("Save QR Image", systemImage: "square.and.arrow.down")
+                            .fontWeight(.semibold)
+                            .frame(width: 180)
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.large)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                Spacer()
             }
+            .frame(maxWidth: .infinity)
         }
+        .padding(30)
         .onAppear {
-            locationAuthorizer.requestPermission()
+            // Request location permission on load
+            CLLocationManager().requestWhenInUseAuthorization()
             detectCurrentWifi()
         }
-        .onChange(of: locationAuthorizer.isAuthorized) { _, _ in
-            detectCurrentWifi()
+        .onChange(of: ssid) { _, newValue in
+            checkHistoryStatus(for: newValue)
+            regenerateQR()
         }
-        .onChange(of: enteredPassword) { _, _ in
+        .onChange(of: password) { _, _ in
             regenerateQR()
         }
         .onChange(of: security) { _, _ in
+            regenerateQR()
+        }
+        .onChange(of: isHidden) { _, _ in
             regenerateQR()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func detectCurrentWifi() {
-        if let interface = CWWiFiClient.shared().interface(),
-           let ssid = interface.ssid()
-        {
-            currentSSID = ssid
+        isDetecting = true
+        Task {
+            let detectedSSID = await Task.detached(priority: .userInitiated) { () -> String? in
+                guard let interface = CWWiFiClient.shared().interface() else { return nil }
+                return interface.ssid()
+            }.value
 
-            // Check if this network is saved in history
-            if let saved = HistoryManager.shared.networks.first(where: { $0.ssid == ssid }) {
-                enteredPassword = saved.password
-                security = saved.security
-                isSavedToHistory = true
-            } else {
-                enteredPassword = ""
-                security = "WPA"
-                isSavedToHistory = false
+            await MainActor.run {
+                isDetecting = false
+                if let ssidName = detectedSSID {
+                    ssid = ssidName
+                    checkHistoryStatus(for: ssidName)
+                }
             }
-            regenerateQR()
+        }
+    }
+
+    private func checkHistoryStatus(for targetSSID: String) {
+        if let saved = HistoryManager.shared.networks.first(where: { $0.ssid == targetSSID }) {
+            password = saved.password
+            security = saved.security
+            isHidden = saved.hidden
+            isSavedToHistory = true
         } else {
-            currentSSID = nil
-            enteredPassword = ""
             isSavedToHistory = false
-            generatedImage = nil
         }
     }
 
     private func saveToHistory() {
-        guard let ssid = currentSSID else { return }
+        guard !ssid.isEmpty else { return }
         HistoryManager.shared.add(
             ssid: ssid,
-            password: enteredPassword,
+            password: password,
             security: security,
-            hidden: false
+            hidden: isHidden
         )
         isSavedToHistory = true
     }
 
     private func removeFromHistory() {
-        guard let ssid = currentSSID else { return }
+        guard !ssid.isEmpty else { return }
         if let saved = HistoryManager.shared.networks.first(where: { $0.ssid == ssid }) {
             HistoryManager.shared.remove(saved)
         }
-        enteredPassword = ""
+        password = ""
         isSavedToHistory = false
         regenerateQR()
     }
 
     private func regenerateQR() {
-        guard let ssid = currentSSID, !ssid.isEmpty else {
+        guard !ssid.isEmpty else {
             generatedImage = nil
             return
         }
-        if security != "nopass", enteredPassword.isEmpty {
+        if security != "nopass", password.isEmpty {
             generatedImage = nil
             return
         }
@@ -341,7 +316,6 @@ struct WifiView: View {
     }
 
     private func saveImage(_ image: NSImage) {
-        guard let ssid = currentSSID else { return }
         let savePanel = NSSavePanel()
         savePanel.allowedContentTypes = [.png]
         savePanel.nameFieldStringValue = "wifi_share_\(ssid.replacingOccurrences(of: " ", with: "_")).png"

@@ -15,14 +15,10 @@ struct MainView: View {
                 }
 
                 NavigationLink(value: 2) {
-                    Label("Generate QR", systemImage: "qrcode")
-                }
-
-                NavigationLink(value: 3) {
                     Label("History", systemImage: "clock")
                 }
 
-                NavigationLink(value: 4) {
+                NavigationLink(value: 3) {
                     Label("Settings", systemImage: "gear")
                 }
             }
@@ -35,8 +31,6 @@ struct MainView: View {
             } else if selectedTab == 1 {
                 WifiView()
             } else if selectedTab == 2 {
-                GenerateQRView()
-            } else if selectedTab == 3 {
                 HistoryView()
             } else {
                 SettingsView()
