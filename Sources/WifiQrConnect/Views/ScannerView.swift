@@ -230,9 +230,7 @@ struct CameraScannerView: NSViewRepresentable {
         
         if session.canAddOutput(metadataOutput) {
             session.addOutput(metadataOutput)
-            
             metadataOutput.setMetadataObjectsDelegate(context.coordinator, queue: DispatchQueue.main)
-            metadataOutput.metadataObjectTypes = [.qr]
         } else {
             return view
         }
@@ -244,6 +242,14 @@ struct CameraScannerView: NSViewRepresentable {
         
         DispatchQueue.global(qos: .userInitiated).async {
             session.startRunning()
+            
+            DispatchQueue.main.async {
+                if metadataOutput.availableMetadataObjectTypes.contains(.qr) {
+                    metadataOutput.metadataObjectTypes = [.qr]
+                } else {
+                    print("Warning: Camera does not support native QR code scanning.")
+                }
+            }
         }
         
         return view
