@@ -22,6 +22,10 @@ struct MainView: View {
                 NavigationLink(value: 3) {
                     Label("History", systemImage: "clock")
                 }
+                
+                NavigationLink(value: 4) {
+                    Label("Settings", systemImage: "gear")
+                }
             }
             .listStyle(.sidebar)
             .navigationTitle("WiFi QR Connect")
@@ -33,8 +37,10 @@ struct MainView: View {
                 WifiView(wifiDetails: scannedWifi)
             } else if selectedTab == 2 {
                 GenerateQRView()
-            } else {
+            } else if selectedTab == 3 {
                 HistoryView()
+            } else {
+                SettingsView()
             }
         }
         .frame(minWidth: 720, minHeight: 480)

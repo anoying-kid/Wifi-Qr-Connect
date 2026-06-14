@@ -14,6 +14,12 @@ struct ScannerView: View {
     @State private var showingTextAlert = false
     @State private var alertPayload = ""
     
+    // Auto-connection states
+    @State private var isConnecting = false
+    @State private var connectionError: String? = nil
+    @State private var showSuccess = false
+    @State private var successSSID = ""
+    
     var body: some View {
         VStack {
             if cameraPermission == .authorized {
@@ -31,6 +37,20 @@ struct ScannerView: View {
                         
                         if isScanning {
                             ScannerOverlayView()
+                                .frame(width: 400, height: 400)
+                        }
+                        
+                        if isConnecting {
+                            Color.black.opacity(0.6)
+                                .cornerRadius(16)
+                                .overlay(
+                                    VStack(spacing: 12) {
+                                        ProgressView()
+                                        Text("Auto-Connecting...")
+                                            .font(.headline)
+                                            .foregroundColor(.white)
+                                    }
+                                )
                                 .frame(width: 400, height: 400)
                         }
                     }
@@ -121,6 +141,25 @@ struct ScannerView: View {
                 resetScanner()
             }
         }
+        .alert("Connection Successful", isPresented: $showSuccess) {
+            Button("OK", role: .cancel) {
+                resetScanner()
+            }
+        } message: {
+            Text("Successfully connected to \(successSSID)!")
+        }
+        .alert("Connection Failed", isPresented: Binding(
+            get: { connectionError != nil },
+            set: { if !$0 { connectionError = nil } }
+        )) {
+            Button("OK", role: .cancel) {
+                resetScanner()
+            }
+        } message: {
+            if let error = connectionError {
+                Text(error)
+            }
+        }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
@@ -140,13 +179,12 @@ struct ScannerView: View {
     }
     
     private func handleScannedCode(_ code: String) {
-        NSSound.beep()
+        if SettingsManager.shared.playBeep {
+            NSSound.beep()
+        }
         
         if code.hasPrefix("WIFI:") {
             if let details = QRParser.parse(qrString: code) {
-                self.scannedWifi = details
-                self.selectedTab = 1
-                
                 // Save scanned network to history
                 HistoryManager.shared.add(
                     ssid: details.ssid,
@@ -154,6 +192,13 @@ struct ScannerView: View {
                     security: details.security,
                     hidden: details.hidden
                 )
+                
+                if SettingsManager.shared.autoConnect {
+                    autoConnectToWifi(details: details)
+                } else {
+                    self.scannedWifi = details
+                    self.selectedTab = 1
+                }
             } else {
                 alertPayload = code
                 showingTextAlert = true
@@ -164,6 +209,23 @@ struct ScannerView: View {
         } else {
             alertPayload = code
             showingTextAlert = true
+        }
+    }
+    
+    private func autoConnectToWifi(details: WiFiDetails) {
+        isConnecting = true
+        connectionError = nil
+        
+        Task {
+            do {
+                try await WifiConnector.connect(details: details)
+                isConnecting = false
+                successSSID = details.ssid
+                showSuccess = true
+            } catch {
+                isConnecting = false
+                connectionError = error.localizedDescription
+            }
         }
     }
     
