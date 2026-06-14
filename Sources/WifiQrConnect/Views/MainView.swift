@@ -7,14 +7,17 @@ struct MainView: View {
     var body: some View {
         NavigationSplitView {
             List(selection: $selectedTab) {
-                Label("QR Scanner", systemImage: "qrcode.viewfinder")
-                    .tag(0 as Int?)
+                NavigationLink(value: 0) {
+                    Label("QR Scanner", systemImage: "qrcode.viewfinder")
+                }
                 
-                Label("Wi-Fi Info", systemImage: "wifi")
-                    .tag(1 as Int?)
+                NavigationLink(value: 1) {
+                    Label("Wi-Fi Info", systemImage: "wifi")
+                }
                 
-                Label("Generate QR", systemImage: "qrcode")
-                    .tag(2 as Int?)
+                NavigationLink(value: 2) {
+                    Label("Generate QR", systemImage: "qrcode")
+                }
             }
             .listStyle(.sidebar)
             .navigationTitle("WiFi QR Connect")

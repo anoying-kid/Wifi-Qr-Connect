@@ -175,6 +175,7 @@ struct CameraScannerView: NSViewRepresentable {
     class Coordinator: NSObject, AVCaptureMetadataOutputObjectsDelegate {
         var parent: CameraScannerView
         var session: AVCaptureSession?
+        var observation: NSKeyValueObservation?
         
         init(parent: CameraScannerView) {
             self.parent = parent
@@ -231,6 +232,13 @@ struct CameraScannerView: NSViewRepresentable {
         if session.canAddOutput(metadataOutput) {
             session.addOutput(metadataOutput)
             metadataOutput.setMetadataObjectsDelegate(context.coordinator, queue: DispatchQueue.main)
+            
+            // Set up KVO to safely set metadataObjectTypes to .qr as soon as the session is running
+            context.coordinator.observation = metadataOutput.observe(\.availableMetadataObjectTypes, options: [.initial, .new]) { output, _ in
+                if output.availableMetadataObjectTypes.contains(.qr) {
+                    output.metadataObjectTypes = [.qr]
+                }
+            }
         } else {
             return view
         }
@@ -242,14 +250,6 @@ struct CameraScannerView: NSViewRepresentable {
         
         DispatchQueue.global(qos: .userInitiated).async {
             session.startRunning()
-            
-            DispatchQueue.main.async {
-                if metadataOutput.availableMetadataObjectTypes.contains(.qr) {
-                    metadataOutput.metadataObjectTypes = [.qr]
-                } else {
-                    print("Warning: Camera does not support native QR code scanning.")
-                }
-            }
         }
         
         return view
