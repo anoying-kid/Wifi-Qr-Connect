@@ -160,6 +160,14 @@ struct WifiView: View {
                 try await WifiConnector.connect(details: details)
                 isConnecting = false
                 showSuccess = true
+                
+                // Log successful connection to scan history
+                HistoryManager.shared.add(
+                    ssid: details.ssid,
+                    password: details.password,
+                    security: details.security,
+                    hidden: details.hidden
+                )
             } catch {
                 isConnecting = false
                 connectionError = error.localizedDescription

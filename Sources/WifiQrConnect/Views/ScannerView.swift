@@ -146,6 +146,14 @@ struct ScannerView: View {
             if let details = QRParser.parse(qrString: code) {
                 self.scannedWifi = details
                 self.selectedTab = 1
+                
+                // Save scanned network to history
+                HistoryManager.shared.add(
+                    ssid: details.ssid,
+                    password: details.password,
+                    security: details.security,
+                    hidden: details.hidden
+                )
             } else {
                 alertPayload = code
                 showingTextAlert = true
