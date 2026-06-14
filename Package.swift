@@ -12,6 +12,11 @@ let package = Package(
             path: "Sources/WifiQrConnect",
             resources: [
                 .process("Resources"),
-            ])
+            ]),
+        .testTarget(
+            name: "WifiQrConnectTests",
+            dependencies: ["WifiQrConnect"],
+            path: "Tests/WifiQrConnectTests"
+        ),
     ]
 )
