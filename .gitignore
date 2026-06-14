@@ -6,6 +6,7 @@
 /.build/
 /.swiftpm/
 /WifiQrConnect.app
+/Icon.icns
 
 # IDEs
 .idea/

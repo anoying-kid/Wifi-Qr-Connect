@@ -63,6 +63,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>LSMinimumSystemVersion</key><string>${MACOS_MIN_VERSION}</string>
     <key>LSUIElement</key><${LSUI_VALUE}/>
     <key>CFBundleIconFile</key><string>Icon</string>
+    <key>NSCameraUsageDescription</key><string>This app requires camera access to scan Wi-Fi QR codes.</string>
     <key>BuildTimestamp</key><string>${BUILD_TIMESTAMP}</string>
     <key>GitCommit</key><string>${GIT_COMMIT}</string>
 </dict>
