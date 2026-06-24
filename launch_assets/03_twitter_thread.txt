@@ -1,0 +1,23 @@
+TWEET 1:
+I was so tired of manually typing long Wi-Fi passwords on my Mac while my Android phone had a QR code right there. The friction between macOS and Android is real.
+
+So I spent the last few weeks building a native macOS app to fix this. It's free & open source 🧵👇
+
+[Attach Video or image 01_qr_scanner.png here]
+
+TWEET 2:
+I originally built a prototype in Flutter, but it was a heavy 43MB beast for a tiny utility. 😅
+
+Today I'm releasing the complete rewrite: 100% native SwiftUI. 
+It's lightning-fast, respects battery life, and the app size plummeted down to ~3MB. 
+
+TWEET 3:
+Features:
+📷 Point your Mac's camera at your phone to scan and connect instantly
+🔗 Generate QR codes for the network your Mac is connected to
+📜 Saves your network history natively
+
+TWEET 4:
+It's 100% open source. Check out the landing page here and let me know what you think! 👇
+
+https://anoying-kid.github.io/Wifi-Qr-Connect/
