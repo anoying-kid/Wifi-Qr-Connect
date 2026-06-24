@@ -448,8 +448,10 @@
     <section id="story" class="story-section">
         <div class="story-container">
             <h2>Why I Built This</h2>
-            <p>I built this because I use a Mac but an Android phone. I was constantly annoyed that I couldn't simply point my Mac's camera at my phone's Wi-Fi QR code to connect instantly.</p>
-            <p>While iPhones and Macs talk to each other seamlessly, the bridge between macOS and Android is often neglected. <strong>WiFi QR Connect</strong> is my open-source contribution to fix that tiny friction point for good.</p>
+            <p>A Mac was my very first laptop. I remember visiting a massive metropolitan city, and my friend told me to connect to a specific Wi-Fi network. Between staring at an endless list of identical SSIDs and trying to manually type out a ridiculously long, complex password without making a typo, it was a nightmare! Meanwhile, my Android phone could just scan a QR code and connect instantly. The friction between macOS and Android was real.</p>
+            <p>I initially built a prototype to solve this in Python—the only language I knew at the time. Later, as I learned Flutter, I ported it over. It got the job done, but it was a heavy 43MB beast for a tiny utility, and the UI/UX was... let's just say you shouldn't look at that old code! 😅</p>
+            <p>While iPhones and Macs talk to each other seamlessly, the bridge between macOS and Android is often neglected. Every time friends came over, or I changed locations, I found myself manually typing out complex Wi-Fi passwords on my Mac while a perfectly scannable QR code was sitting right there on my phone screen. I searched for existing solutions, but everything I found was either a heavy Electron app that drained battery, a paid subscription tool, or just an ugly wrapper around a website.</p>
+            <p>So, I decided to rewrite it from the ground up. Today, <strong>WiFi QR Connect</strong> is built in 100% native SwiftUI. It's incredibly fast, respects your battery life, and the app size has plummeted from 43MB down to just <strong>~3MB</strong>. No bloat, no cross-platform compromises. Just a tiny, beautiful native utility that bridges the gap between Mac and Android for good.</p>
             
             <div style="margin-top: 3rem;">
                 <p style="font-size: 0.9rem; margin-bottom: 1rem;">If you find this tool useful, consider buying me a coffee!</p>
