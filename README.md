@@ -1,6 +1,6 @@
 # WiFi QR Connect (macOS)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Platform: macOS](https://img.shields.io/badge/Platform-macOS%2013.0+-lightgrey.svg)](#requirements)
 
 Connecting your Mac to a new Wi-Fi network should be as simple as scanning a code. While most mobile devices support "Share Wi-Fi using QR code" natively, macOS lacks a built-in mechanism to scan these codes or generate them for others. 
