@@ -7,6 +7,8 @@ Connecting your Mac to a new Wi-Fi network should be as simple as scanning a cod
 
 **WiFi QR Connect** is a native macOS application built with SwiftUI that bridges this gap. It allows you to scan Wi-Fi QR codes using your Mac's camera to connect instantly, and lets you generate QR codes to share your own networks.
 
+https://github.com/user-attachments/assets/b9e097c5-d9ae-4814-be1a-3fbfc5d93dea
+
 ---
 
 ## Key Features
